@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package codesigner;
+
+message SignPackageRequest {
+  bytes package = 1;
+  string developer_id = 2;
+  string password = 3;
+}
+
+message SignPackageReply {
+  bytes signed_package = 1;
+  string codesign_output = 2;
+  int32 codesign_return_code = 3;
+}
+
+message VerifyPackageRequest {
+  bytes package = 1;
+}
+
+message VerifyPackageReply {
+  bool ok = 1;
+  string codesign_output = 2;
+}
+
+service CodeSigner {
+  rpc SignPackage (SignPackageRequest) returns (SignPackageReply) {}
+  rpc VerifyPackage (VerifyPackageRequest) returns (VerifyPackageReply) {}
+}
