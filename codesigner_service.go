@@ -2,24 +2,40 @@ package codesigner
 
 import (
   "context"
+  "flag"
   "fmt"
   "io/ioutil"
   "os/exec"
+  "sync"
 )
 
-type CodeSigner struct{}
+var defaultKeychainPath = flag.String("keychain", "buildbot.keychain", "Path to keychain containing developer IDs")
+
+type CodeSigner struct{
+  lock sync.Mutex
+}
 
 func unlockKeychain(password string, keychainPath string) (string, error) {
-  cmd := exec.Command("security", "unlock-keychain", "-p", password, "buildbot.keychain")
+  cmd := exec.Command("security", "unlock-keychain", "-p", password, keychainPath)
+  out, err := cmd.CombinedOutput()
+  return string(out), err
+}
+
+func lockKeychain(keychainPath string) (string, error) {
+  cmd := exec.Command("security", "lock-keychain", keychainPath)
   out, err := cmd.CombinedOutput()
   return string(out), err
 }
 
 func (s *CodeSigner) SignPackage(ctx context.Context, req *SignPackageRequest) (*SignPackageReply, error) {
-  unlock, err := unlockKeychain(req.GetPassword(), "buildbot.keychain")
+  s.lock.Lock()
+  defer s.lock.Unlock()
+
+  unlock, err := unlockKeychain(req.GetPassword(), *defaultKeychainPath)
   if err != nil {
     return nil, fmt.Errorf("Failed to unlock keychain: %v; %s", err, unlock)
   }
+  defer lockKeychain(*defaultKeychainPath)
   temp, err := ioutil.TempFile("", "codesigner")
   if err != nil {
     return nil, fmt.Errorf("Failed to create temp file for signing: %v", err)
