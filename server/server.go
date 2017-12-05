@@ -11,7 +11,7 @@ import (
   "google.golang.org/grpc/reflection"
 )
 
-var port = flag.Int("port", 5000, "Port to start GRPC server on")
+var port = flag.Int("port", 5001, "Port to start GRPC server on")
 
 func main() {
   flag.Parse()
@@ -19,7 +19,7 @@ func main() {
   if err != nil {
     log.Fatalf("Failed to listen on port: %d, %v", *port, err)
   }
-  s := grpc.NewServer()
+  s := grpc.NewServer(grpc.MaxRecvMsgSize(100*1024*1024))
   codesigner.RegisterCodeSignerServer(s, &codesigner.CodeSigner{})
   reflection.Register(s)
   log.Println("Starting server...")
