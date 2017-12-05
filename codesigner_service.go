@@ -62,5 +62,19 @@ func (s *CodeSigner) SignPackage(ctx context.Context, req *SignPackageRequest) (
 }
 
 func (s *CodeSigner) VerifyPackage(ctx context.Context, req *VerifyPackageRequest) (*VerifyPackageReply, error) {
-  return nil, fmt.Errorf("Not implemented")
+  temp, err := ioutil.TempFile("", "codesigner")
+  if err != nil {
+    return nil, fmt.Errorf("Failed to create temp file for verifying: %v", err)
+  }
+  _, err = temp.Write(req.GetPackage())
+  if err != nil {
+    return nil, fmt.Errorf("Failed to write temp file: %v", err)
+  }
+  temp.Close()
+  cmd := exec.Command("codesign", "-vvv", temp.Name())
+  out, err := cmd.CombinedOutput()
+  return &VerifyPackageReply{
+    Ok: err == nil,
+    CodesignOutput: string(out),
+  }, nil
 }

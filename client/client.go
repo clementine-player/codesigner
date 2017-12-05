@@ -2,9 +2,12 @@ package main
 
 import (
   "context"
+  "crypto/tls"
+  "crypto/x509"
   "flag"
   "io/ioutil"
   "log"
+  "net"
 
   "github.com/clementine/codesigner"
   "google.golang.org/grpc"
@@ -15,14 +18,34 @@ var address = flag.String("address", "localhost:5001", "Address of CodeSigner GR
 var dmg = flag.String("dmg", "", "Path to unsigned DMG")
 var developerID = flag.String("developer-id", "", "Developer ID to sign with")
 var output = flag.String("output", "clementine.dmg", "Path to output signed dmg")
-var cert = flag.String("cert", "", "Path to server TLS cert")
+var cert = flag.String("cert", "", "Path to client TLS cert")
+var key = flag.String("key", "", "Path to client TLS key")
+var ca = flag.String("ca", "", "Path to CA Certificate")
 
 func main() {
   flag.Parse()
-  creds, err := credentials.NewClientTLSFromFile(*cert, "")
+  crt, err := tls.LoadX509KeyPair(*cert, *key)
   if err != nil {
-    log.Fatalf("Failed to load TLS cert")
+    log.Fatalf("Failed to load client TLS certificate: %v", err)
   }
+  certPool := x509.NewCertPool()
+  caCert, err := ioutil.ReadFile(*ca)
+  if err != nil {
+    log.Fatalf("Failed to load CA certificate: %v", err)
+  }
+  ok := certPool.AppendCertsFromPEM(caCert)
+  if !ok {
+    log.Fatalf("Failed to load CA certificate: %v", err)
+  }
+  addr, _, err := net.SplitHostPort(*address)
+  if err != nil {
+    log.Fatalf("Failed to parse address flag: %s", *address)
+  }
+  creds := credentials.NewTLS(&tls.Config{
+    ServerName:   addr,
+    Certificates: []tls.Certificate{crt},
+    RootCAs:      certPool,
+  })
   conn, err := grpc.Dial(*address, grpc.WithTransportCredentials(creds), grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(100*1024*1024), grpc.MaxCallRecvMsgSize(100*1024*1024)))
   if err != nil {
     log.Fatalf("Could not connect to GRPC service: %v", err)
