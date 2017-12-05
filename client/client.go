@@ -14,7 +14,6 @@ import (
 var address = flag.String("address", "localhost:5001", "Address of CodeSigner GRPC service")
 var dmg = flag.String("dmg", "", "Path to unsigned DMG")
 var developerID = flag.String("developer-id", "", "Developer ID to sign with")
-var password = flag.String("password", "", "Password for keychain containing developer ID")
 var output = flag.String("output", "clementine.dmg", "Path to output signed dmg")
 var cert = flag.String("cert", "", "Path to server TLS cert")
 
@@ -38,7 +37,6 @@ func main() {
   reply, err := c.SignPackage(context.Background(), &codesigner.SignPackageRequest{
     Package: unsigned,
     DeveloperId: *developerID,
-    Password: *password,
   })
   if err != nil {
     log.Fatalf("Failed to sign package: %v", err)

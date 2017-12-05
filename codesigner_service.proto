@@ -5,7 +5,6 @@ package codesigner;
 message SignPackageRequest {
   bytes package = 1;
   string developer_id = 2;
-  string password = 3;
 }
 
 message SignPackageReply {

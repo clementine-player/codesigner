@@ -10,6 +10,7 @@ import (
 )
 
 var defaultKeychainPath = flag.String("keychain", "buildbot.keychain", "Path to keychain containing developer IDs")
+var password = flag.String("password", "", "Password for the keychain")
 
 type CodeSigner struct{
   lock sync.Mutex
@@ -31,7 +32,7 @@ func (s *CodeSigner) SignPackage(ctx context.Context, req *SignPackageRequest) (
   s.lock.Lock()
   defer s.lock.Unlock()
 
-  unlock, err := unlockKeychain(req.GetPassword(), *defaultKeychainPath)
+  unlock, err := unlockKeychain(*password, *defaultKeychainPath)
   if err != nil {
     return nil, fmt.Errorf("Failed to unlock keychain: %v; %s", err, unlock)
   }
