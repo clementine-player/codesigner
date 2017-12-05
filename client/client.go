@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -21,6 +22,7 @@ var output = flag.String("output", "clementine.dmg", "Path to output signed dmg"
 var cert = flag.String("cert", "", "Path to client TLS cert")
 var key = flag.String("key", "", "Path to client TLS key")
 var ca = flag.String("ca", "", "Path to CA Certificate")
+var verify = flag.Bool("verify", false, "Whether to instead verify that the given DMG is signed correctly")
 
 func main() {
 	flag.Parse()
@@ -57,14 +59,29 @@ func main() {
 		log.Fatalf("Failed to read DMG file: %v", err)
 	}
 	c := codesigner.NewCodeSignerClient(conn)
-	reply, err := c.SignPackage(context.Background(), &codesigner.SignPackageRequest{
-		Package:     unsigned,
-		DeveloperId: *developerID,
-	})
-	if err != nil {
-		log.Fatalf("Failed to sign package: %v", err)
-	}
-	if err = ioutil.WriteFile(*output, reply.GetSignedPackage(), 0644); err != nil {
-		log.Fatalf("Failed to write output dmg: %v", err)
+
+	if *verify {
+		reply, err := c.VerifyPackage(context.Background(), &codesigner.VerifyPackageRequest{
+			Package: unsigned,
+		})
+		if err != nil {
+			log.Fatalf("Failed to verify package: %v", err)
+		}
+		if reply.GetOk() {
+			fmt.Printf("%s is signed correctly\n", *dmg)
+		} else {
+			fmt.Printf("%s is not signed correctly: %s\n", *dmg, reply.GetCodesignOutput())
+		}
+	} else {
+		reply, err := c.SignPackage(context.Background(), &codesigner.SignPackageRequest{
+			Package:     unsigned,
+			DeveloperId: *developerID,
+		})
+		if err != nil {
+			log.Fatalf("Failed to sign package: %v", err)
+		}
+		if err = ioutil.WriteFile(*output, reply.GetSignedPackage(), 0644); err != nil {
+			log.Fatalf("Failed to write output dmg: %v", err)
+		}
 	}
 }
