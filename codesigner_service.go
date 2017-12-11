@@ -12,18 +12,21 @@ import (
 var defaultKeychainPath = flag.String("keychain", "buildbot.keychain", "Path to keychain containing developer IDs")
 var password = flag.String("password", "", "Password for the keychain")
 
+// Test helper
+var execCommand = exec.Command
+
 type CodeSigner struct {
 	lock sync.Mutex
 }
 
 func unlockKeychain(password string, keychainPath string) (string, error) {
-	cmd := exec.Command("security", "unlock-keychain", "-p", password, keychainPath)
+	cmd := execCommand("security", "unlock-keychain", "-p", password, keychainPath)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
 
 func lockKeychain(keychainPath string) (string, error) {
-	cmd := exec.Command("security", "lock-keychain", keychainPath)
+	cmd := execCommand("security", "lock-keychain", keychainPath)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
@@ -46,7 +49,7 @@ func (s *CodeSigner) SignPackage(ctx context.Context, req *SignPackageRequest) (
 		return nil, fmt.Errorf("Failed to write temp file: %v", err)
 	}
 	temp.Close()
-	cmd := exec.Command("codesign", "-fv", "-s", req.GetDeveloperId(), temp.Name())
+	cmd := execCommand("codesign", "-fv", "-s", req.GetDeveloperId(), temp.Name())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to codesign: %s", out)
@@ -71,7 +74,7 @@ func (s *CodeSigner) VerifyPackage(ctx context.Context, req *VerifyPackageReques
 		return nil, fmt.Errorf("Failed to write temp file: %v", err)
 	}
 	temp.Close()
-	cmd := exec.Command("codesign", "-vvv", temp.Name())
+	cmd := execCommand("codesign", "-vvv", temp.Name())
 	out, err := cmd.CombinedOutput()
 	return &VerifyPackageReply{
 		Ok:             err == nil,
