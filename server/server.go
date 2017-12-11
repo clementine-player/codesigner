@@ -9,7 +9,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/clementine/codesigner"
+	"github.com/clementine-player/codesigner"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"

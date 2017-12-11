@@ -10,7 +10,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/clementine/codesigner"
+	"github.com/clementine-player/codesigner"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
